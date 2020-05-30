@@ -2,7 +2,7 @@
 class config(object):
 	
 	manualSeed = 999		# random seed for reproducibility
-	version = 3.0			# version
+	version = 2.0			# version
 	
 	workers = 2				# number of worker threads for loading
 	batch_size = 64			# as RealNVP paper
