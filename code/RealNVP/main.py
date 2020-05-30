@@ -5,6 +5,7 @@ https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
 import os
 import random
 import torch
+import time
 from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
@@ -22,13 +23,11 @@ sys.path.append(r"../")
 from RealNVP.model import Flow
 from RealNVP.config import config
 
-from torchviz import make_dot
+
 from torch.autograd import Variable
 
 
 def Show_Results(log_Prior_Prob_list, log_det_list, img_list):
-	if not os.path.exists(config.output_path):
-		os.makedirs(config.output_path)
 	
 	plt.figure(figsize=(10, 5))
 	plt.title("Two Parts of p(x) During Training")
@@ -91,7 +90,7 @@ def show_reconstructed_images(imgs, rec_imgs):
 def Show_Model(model):
 	dummy_input = torch.autograd.Variable(torch.rand(1, 3, 64, 64))
 	out = model(dummy_input)
-	make_dot(out, params=dict(model.named_parameters()))
+	#make_dot(out, params=dict(model.named_parameters()))
 
 def Train():
 	"""
@@ -106,9 +105,9 @@ def Train():
 									   config.image_size, device=device)
 	iters = 0
 	Prior = torch.distributions.normal.Normal(
-		loc=torch.zeros(config.nc, config.image_size, config.image_size),
+		loc=torch.zeros(config.nc, config.image_size, config.image_size).to(device=device),
 		scale=1)
-	offset = torch.sum(Prior.log_prob(torch.zeros(config.nc, config.image_size, config.image_size)))
+	# offset = torch.sum(Prior.log_prob(torch.zeros(config.nc, config.image_size, config.image_size)))
 	
 	print("Starting Training Loop...")
 	# For each epoch
@@ -123,13 +122,13 @@ def Train():
 			netF.zero_grad()
 			# Calculate log(D(x))
 			images = data[0].to(device)
-			latent_vectors, log_dets = netF(images)
-			#reconstructed_images = netF.generate(latent_vectors).detach()
-			#show_reconstructed_images(images, reconstructed_images)
+			latent_vectors, log_diag_J = netF(images)
+			# reconstructed_images = netF.generate(latent_vectors).detach()
+			# show_reconstructed_images(images, reconstructed_images)
 			# calculate log_prob for every batch
-			log_probs = torch.sum(Prior.log_prob(latent_vectors), dim=[1,2,3])
-			log_det = torch.mean(log_dets)
-			log_prob = torch.mean(log_probs)
+			log_det = torch.mean(torch.sum(log_diag_J, dim=[1, 2, 3]))
+			log_prob = torch.mean(torch.sum(Prior.log_prob(latent_vectors),
+			                                dim=[1, 2, 3]))
 			loss = - log_prob - log_det
 			loss.backward()
 			# apply gradients
@@ -137,9 +136,10 @@ def Train():
 			
 			# Output training stats
 			if i % 50 == 0:
-				print('[%d/%d][%d/%d]\tlog(P_Z(f(x))): %.4f\tlog(|det(df/dx)|): %.4f\t'
+				print('[%s] [%d/%d][%d/%d]\tlog(P_Z(f(x))): %.4f\tlog(|det(df/dx)|): %.4f\t'
 					  'log_likelihood: %.4f'
-					  % (epoch, config.num_epochs, i, len(dataloader),
+                      % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+					  epoch, config.num_epochs, i, len(dataloader),
 						 log_prob.item(), log_det.item(), -loss.item()))
 			
 			# Save losses for plotting later
@@ -173,6 +173,9 @@ def Save_Models():
 
 
 if __name__ == '__main__':
+	if not os.path.exists(config.output_path):
+		os.makedirs(config.output_path)
+	
 	random.seed(config.manualSeed)
 	torch.manual_seed(config.manualSeed)
 	# Create the dataset
@@ -190,7 +193,7 @@ if __name__ == '__main__':
 							shuffle=True, num_workers=config.workers)
 	
 	# Decide which device to run on
-	device = torch.device("cuda:0" if (torch.cuda.is_available() and config.ngpu > 0)
+	device = torch.device("cuda:3" if (torch.cuda.is_available() and config.ngpu > 0)
 						  else "cpu")
 	
 	netF = Flow().to(device=device)

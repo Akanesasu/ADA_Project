@@ -14,7 +14,7 @@ class config(object):
     num_epochs = 5			# number of training epochs to run
     learning_rate = 0.0002  # for optimizers
     beta1 = 0.5				# for adam optimizer
-    ngpu = 0				# numbers of gpu available, 0 for cpu mode
+    ngpu = 1				# numbers of gpu available, 0 for cpu mode
 
     # for model hyperparameters
     init_var = 0.02			# variance for the initialization Gaussian

@@ -192,8 +192,9 @@ if __name__ == '__main__':
 							shuffle=True, num_workers=config.workers)
 
 	# Decide which device to run on
-	device = torch.device("cuda:1" if (torch.cuda.is_available() and config.ngpu > 0)
+	device = torch.device("cuda:0" if (torch.cuda.is_available() and config.ngpu > 0)
 						  else "cpu")
+
 
 	netG = Generator(config.nz, config.ngf, config.nc).to(device=device)
 	netD = Discriminator(config.nc, config.ndf).to(device=device)

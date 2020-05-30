@@ -143,3 +143,7 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+/code/realNVP_Ref/samples/cifar10/
+/code/realNVP_Ref/samples/imnet32/
+/code/realNVP_Ref/samples/imnet64/
